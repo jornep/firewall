@@ -1,0 +1,21 @@
+iptables -A INPUT -m state --state NEW -p tcp --dport 80 -j ACCEPT 		#HTTP incoming
+iptables -A INPUT -m state --state NEW -p tcp --dport 443 -j ACCEPT		#HTTPS incoming
+iptables -I INPUT 2 -p tcp --match multiport --dports 49152:65535 -j ACCEPT	#proftp(range)
+iptables -A OUTPUT -p tcp --dport 80 -m state --state NEW -j ACCEPT		#HTTP outgoing
+
+#DNS outgoing
+iptables -A OUTPUT -p tcp --dport 53 -m state --state NEW -j ACCEPT	
+iptables -A OUTPUT -p udp --dport 53 -m state --state NEW -j ACCEPT
+
+#bind
+iptables -I INPUT 1 -p tcp -m tcp --dport 53 -m state --state NEW,ESTABLISHED -j DROP
+iptables -I INPUT 2 -p udp -m udp --dport 53 -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A OUTPUT -p udp -m udp --sport 53:65535 --dport 53 -m state --state NEW,ESTABLISHED -j ACCEPT
+
+#ICMP flood
+iptables -A INPUT -p tcp -m state --state NEW -m limit --limit 5/second --limit-burst 5 -j ACCEPT
+iptables -A INPUT –p tcp –m state --state NEW –j DROP
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A INPUT -j DROP
+iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A OUTPUT -j DROP
